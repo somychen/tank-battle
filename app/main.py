@@ -1149,9 +1149,9 @@ async def index():
 
     <!-- Right: AI Chat -->
     <div class="ai-chat-pane" id="aiChatPane">
-      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:10px 12px">
         <!-- Session management bar -->
-        <div class="session-bar" style="flex:1;padding:0">
+        <div class="session-bar" style="flex:1 1 auto;padding:0;min-width:180px">
           <button class="btn-session" onclick="createNewSession()" title="新建对话">+ 新建</button>
           <select id="aiSessionSelect" onchange="onSessionChange()">
             <option value="">-- 选择对话 --</option>
