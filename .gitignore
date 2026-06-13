@@ -1,0 +1,35 @@
+# 环境变量文件（含 API Key，切勿提交）
+.env
+
+# AI 配置持久化文件（含 API Key）
+app/services/ai/ai_config.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Windows 保留设备名
+nul
+con
+prn
+aux
+
+# 输出文件
+output/
+
+# 数据文件（SQLite 数据库、聊天记录等）
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# 调试文件
+_debug_*.js
+_debug_*.json
