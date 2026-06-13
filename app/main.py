@@ -148,6 +148,19 @@ async def shutdown():
 
 # ---- 前端页面 ----
 
+@app.get("/favicon.ico")
+async def favicon():
+    """返回一个简单的 favicon 图标，避免 404"""
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        '<rect width="32" height="32" rx="4" fill="#2563eb"/>'
+        '<text x="16" y="22" text-anchor="middle" font-size="18" font-family="Arial" fill="white" font-weight="bold">M</text>'
+        '</svg>'
+    )
+    from fastapi.responses import Response
+    return Response(content=svg, media_type="image/svg+xml")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     """前端界面"""
