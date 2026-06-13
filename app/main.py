@@ -2575,7 +2575,12 @@ async function sendAIMessage() {
 
   } catch (err) {
     loadingEl.remove();
-    appendChatMessage('assistant', '\u274c \u8bf7\u6c42\u5931\u8d25: ' + escapeHtml(String(err.message)));
+    var errText = String(err.message || err);
+    var hint = '';
+    if (errText.indexOf('Connection') > -1 || errText.indexOf('connect') > -1 || errText.indexOf('timeout') > -1 || errText.indexOf('超时') > -1) {
+      hint = '\n请检查网络连接，或稍后重试';
+    }
+    appendChatMessage('assistant', '\u274c \u8bf7\u6c42\u5931\u8d25: ' + escapeHtml(errText) + escapeHtml(hint));
   } finally {
     btn.disabled = false;
     input.disabled = false;
@@ -3213,41 +3218,52 @@ async def ai_chat(body: dict):
             ]
         messages.append(msg)
 
-    try:
-        if use_tools:
-            response = await manager.chat_with_tools(
-                provider_name=provider_name,
-                model=model,
-                messages=messages,
-                system_prompt=system_prompt,
-            )
-        else:
-            response = await manager.chat(
-                provider_name=provider_name,
-                model=model,
-                messages=messages,
-                system_prompt=system_prompt,
-            )
+    import asyncio as _asyncio
+    last_error = None
+    for attempt in range(3):
+        try:
+            if use_tools:
+                response = await manager.chat_with_tools(
+                    provider_name=provider_name,
+                    model=model,
+                    messages=messages,
+                    system_prompt=system_prompt,
+                )
+            else:
+                response = await manager.chat(
+                    provider_name=provider_name,
+                    model=model,
+                    messages=messages,
+                    system_prompt=system_prompt,
+                )
 
-        result = {
-            "success": True,
-            "content": response.content,
-            "model": response.model,
-            "provider": response.provider,
-            "usage": response.usage,
-        }
-        if response.tool_calls:
-            result["tool_calls"] = [
-                {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
-                for tc in response.tool_calls
-            ]
-        if response.tool_results:
-            result["tool_results"] = response.tool_results
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 调用失败: {str(e)}")
+            result = {
+                "success": True,
+                "content": response.content,
+                "model": response.model,
+                "provider": response.provider,
+                "usage": response.usage,
+            }
+            if response.tool_calls:
+                result["tool_calls"] = [
+                    {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
+                    for tc in response.tool_calls
+                ]
+            if response.tool_results:
+                result["tool_results"] = response.tool_results
+            return result
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            last_error = e
+            err_str = str(e).lower()
+            # 仅对连接类错误重试
+            if attempt < 2 and ("connect" in err_str or "timeout" in err_str or "connection" in err_str):
+                await _asyncio.sleep(1.0 * (attempt + 1))
+                continue
+            break
+
+    raise HTTPException(status_code=500, detail=f"AI 调用失败: {str(last_error)}")
 
 
 @app.get("/api/v1/ai/health")

@@ -39,7 +39,7 @@ class OpenAIProvider(AIProvider):
 
     def _ensure_client(self):
         if self._client is None:
-            kwargs = {"api_key": self._api_key}
+            kwargs = {"api_key": self._api_key, "timeout": 30.0, "max_retries": 0}
             if self._base_url:
                 kwargs["base_url"] = self._base_url
             self._client = AsyncOpenAI(**kwargs)
