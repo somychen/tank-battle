@@ -248,6 +248,7 @@ async def index():
     justify-content: space-between;
     gap: 8px;
     flex-shrink: 0;
+    overflow: hidden;
   }
   .panel-body {
     flex: 1;
@@ -1154,7 +1155,7 @@ async def index():
         <div class="session-bar" style="flex:1 1 auto;padding:0;min-width:180px">
           <button class="btn-session" onclick="createNewSession()" title="新建对话">+ 新建</button>
           <select id="aiSessionSelect" onchange="onSessionChange()">
-            <option value="">-- 选择对话 --</option>
+            <option value="">-- 会话 --</option>
           </select>
           <button class="btn-session danger" onclick="deleteCurrentSession()" title="删除当前对话">X</button>
         </div>
