@@ -1998,6 +1998,7 @@ var aiChatHistory = [];
 var aiCurrentSessionId = null;
 var aiSessions = [];
 var aiSaveTimer = null;
+var sessionTitleAutoSet = false;
 
 // ---- Load AI providers and models on startup ----
 async function loadAIProviders() {
@@ -2160,6 +2161,8 @@ async function createNewSession(silent) {
     aiSessions.unshift(session);
     renderSessionSelector();
     await switchSession(session.id, true);
+    // 新会话启用自动标题
+    sessionTitleAutoSet = true;
   } catch (err) {
     alert('创建会话失败: ' + err.message);
   }
@@ -2173,6 +2176,9 @@ async function switchSession(sessionId, silent) {
     var session = data.session;
     aiCurrentSessionId = session.id;
     localStorage.setItem('aiLastSessionId', session.id);
+
+    // 已有自定义标题的会话不再自动覆盖
+    sessionTitleAutoSet = (session.title === '新对话' || !session.title);
 
     // 恢复消息
     aiChatHistory = (session.messages || []).map(function(m) {
@@ -2254,22 +2260,33 @@ function saveSessionDebounced() {
 async function saveSession() {
   if (!aiCurrentSessionId) return;
   try {
+    var body = {
+      messages: aiChatHistory,
+      model_provider: aiSelectedProvider,
+      model_id: aiSelectedModel,
+      document_ref: currentFile || ''
+    };
+    if (sessionTitleAutoSet === true && aiChatHistory.length >= 2) {
+      // 第一次对话后自动生成标题
+      var userMsg = aiChatHistory.find(function(m) { return m.role === 'user'; });
+      if (userMsg && userMsg.content) {
+        var autoTitle = userMsg.content.replace(/\s+/g, ' ').trim().substring(0, 30);
+        body.title = autoTitle;
+        sessionTitleAutoSet = 'done';
+      }
+    }
     await fetch('/api/v1/ai/sessions/' + aiCurrentSessionId, {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        messages: aiChatHistory,
-        model_provider: aiSelectedProvider,
-        model_id: aiSelectedModel,
-        document_ref: currentFile || ''
-      })
+      body: JSON.stringify(body)
     });
-    // 更新本地会话列表中的消息数
+    // 更新本地会话列表
     var sess = aiSessions.find(function(s) { return s.id === aiCurrentSessionId; });
     if (sess) {
       sess.message_count = aiChatHistory.length;
       sess.model_provider = aiSelectedProvider;
       sess.model_id = aiSelectedModel;
+      if (body.title) sess.title = body.title;
       renderSessionSelector();
     }
   } catch (err) {
