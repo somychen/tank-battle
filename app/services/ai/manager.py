@@ -212,7 +212,7 @@ class AIManager:
     async def chat_with_tools(self, provider_name: str, model: str,
                               messages: list[ChatMessage],
                               system_prompt: str = "",
-                              max_iterations: int = 5) -> ChatResponse:
+                              max_iterations: int = 3) -> ChatResponse:
         """带 Function Calling 的聊天接口 — AI 可自动调用工具多轮交互
 
         如果 Provider 不支持 Function Calling，则退化为普通 chat。

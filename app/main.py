@@ -1181,7 +1181,7 @@ async def index():
         <div class="ai-chat-input-area">
           <div class="model-selector" style="margin-right:6px">
             <span class="ai-status-dot offline" id="aiStatusDot" title="AI 状态"></span>
-            <select id="aiModelSelect" onchange="onAIModelChange()">
+            <select id="aiModelSelect">
               <option value="">加载中...</option>
             </select>
           </div>
@@ -1996,7 +1996,6 @@ var aiModels = [];
 var aiHealth = {};
 var aiSelectedProvider = '';
 var aiSelectedModel = '';
-var _updatingSelector = false;
 var aiChatHistory = [];
 var aiCurrentSessionId = null;
 var aiSessions = [];
@@ -2030,8 +2029,9 @@ async function loadAIProviders() {
 }
 
 function updateModelSelector() {
-  _updatingSelector = true;
   var sel = document.getElementById('aiModelSelect');
+  // 临时解绑 onchange 事件，防止 innerHTML 清空触发 onAIModelChange 误删 localStorage
+  sel.removeEventListener('change', onAIModelChange);
   sel.innerHTML = '<option value="">-- 选择模型 --</option>';
 
   // 按 provider 分组
@@ -2071,7 +2071,8 @@ function updateModelSelector() {
   if (aiSelectedProvider && aiSelectedModel) {
     sel.value = aiSelectedProvider + ':' + aiSelectedModel;
   }
-  _updatingSelector = false;
+  // 重新绑定 onchange 事件
+  sel.addEventListener('change', onAIModelChange);
 }
 
 function updateAIStatus() {
@@ -2102,7 +2103,6 @@ function updateAIStatus() {
 }
 
 function onAIModelChange() {
-  if (_updatingSelector) return;
   var sel = document.getElementById('aiModelSelect');
   if (!sel.value) {
     aiSelectedProvider = '';
@@ -2803,6 +2803,7 @@ async function saveAISettings() {
 }
 
 // ---- Initialize AI on page load ----
+document.getElementById('aiModelSelect').addEventListener('change', onAIModelChange);
 loadAIProviders();
 </script>
 </body>
