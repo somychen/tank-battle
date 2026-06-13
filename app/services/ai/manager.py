@@ -156,35 +156,44 @@ class AIManager:
         return result
 
     async def list_all_models(self) -> list[dict[str, Any]]:
-        """获取所有 Provider 的模型列表"""
+        """获取所有 Provider 的模型列表（并行，每个最多 3 秒超时）"""
+        import asyncio
+
+        async def _list_one(prov_name: str, provider) -> list[dict]:
+            try:
+                models = await asyncio.wait_for(
+                    provider.list_models(), timeout=3.0
+                )
+                return [
+                    {"id": m.id, "display_name": m.display_name, "provider": prov_name}
+                    for m in models
+                ]
+            except (asyncio.TimeoutError, Exception):
+                return []
+
+        tasks = [_list_one(name, p) for name, p in self._providers.items()]
+        results = await asyncio.gather(*tasks)
         all_models = []
-        for prov_name, provider in self._providers.items():
-            health = await provider.check_health()
-            if health:
-                models = await provider.list_models()
-                for m in models:
-                    all_models.append({
-                        "id": m.id,
-                        "display_name": m.display_name,
-                        "provider": prov_name,
-                    })
-            else:
-                # 即使不健康也返回缓存的模型列表
-                models = await provider.list_models()
-                for m in models:
-                    all_models.append({
-                        "id": m.id,
-                        "display_name": m.display_name,
-                        "provider": prov_name,
-                    })
+        for r in results:
+            all_models.extend(r)
         return all_models
 
     async def check_all_health(self) -> dict[str, bool]:
-        """检查所有 Provider 健康状态"""
-        results = {}
-        for name, provider in self._providers.items():
-            results[name] = await provider.check_health()
-        return results
+        """检查所有 Provider 健康状态（并行，每个最多 3 秒超时）"""
+        import asyncio
+
+        async def _check_one(name: str, provider) -> tuple[str, bool]:
+            try:
+                result = await asyncio.wait_for(
+                    provider.check_health(), timeout=3.0
+                )
+                return name, result
+            except (asyncio.TimeoutError, Exception):
+                return name, False
+
+        tasks = [_check_one(name, p) for name, p in self._providers.items()]
+        results_list = await asyncio.gather(*tasks)
+        return dict(results_list)
 
     async def chat(self, provider_name: str, model: str,
                    messages: list[ChatMessage],

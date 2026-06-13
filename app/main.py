@@ -1180,7 +1180,7 @@ async def index():
           <div class="model-selector" style="margin-right:6px">
             <span class="ai-status-dot offline" id="aiStatusDot" title="AI 状态"></span>
             <select id="aiModelSelect" onchange="onAIModelChange()">
-              <option value="">-- 选择模型 --</option>
+              <option value="">加载中...</option>
             </select>
           </div>
           <textarea id="aiChatInput" rows="1" placeholder="输入消息..." onkeydown="onChatInputKeydown(event)"></textarea>
@@ -2021,6 +2021,8 @@ async function loadAIProviders() {
     loadSessions();  // 加载聊天会话
   } catch (err) {
     console.error('加载 AI Provider 失败:', err);
+    var sel = document.getElementById('aiModelSelect');
+    sel.innerHTML = '<option value="">加载失败，请检查设置</option>';
   }
 }
 
