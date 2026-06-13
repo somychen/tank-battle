@@ -729,6 +729,7 @@ async def index():
 
   .ai-chat-input-area {
     display: flex;
+    align-items: center;
     gap: 8px;
     padding: 10px 12px;
     border-top: 1px solid var(--panel-border);
@@ -751,7 +752,8 @@ async def index():
     border-color: var(--primary);
   }
   .ai-chat-input-area button {
-    padding: 6px 16px;
+    flex-shrink: 0;
+    padding: 8px 16px;
     border: none;
     border-radius: 6px;
     background: var(--primary);
@@ -760,7 +762,6 @@ async def index():
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
-    align-self: flex-end;
   }
   .ai-chat-input-area button:hover { background: var(--primary-hover); }
   .ai-chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -770,6 +771,7 @@ async def index():
     align-items: center;
     gap: 6px;
     font-size: 12px;
+    flex-shrink: 0;
   }
   .model-selector select {
     font-size: 12px;
@@ -778,7 +780,7 @@ async def index():
     border-radius: 4px;
     background: var(--card-bg);
     color: var(--text);
-    max-width: 180px;
+    width: 155px;
   }
   .model-selector select:focus { outline: none; border-color: var(--primary); }
   .ai-status-dot {
@@ -1994,6 +1996,7 @@ var aiModels = [];
 var aiHealth = {};
 var aiSelectedProvider = '';
 var aiSelectedModel = '';
+var _updatingSelector = false;
 var aiChatHistory = [];
 var aiCurrentSessionId = null;
 var aiSessions = [];
@@ -2027,6 +2030,7 @@ async function loadAIProviders() {
 }
 
 function updateModelSelector() {
+  _updatingSelector = true;
   var sel = document.getElementById('aiModelSelect');
   sel.innerHTML = '<option value="">-- 选择模型 --</option>';
 
@@ -2067,6 +2071,7 @@ function updateModelSelector() {
   if (aiSelectedProvider && aiSelectedModel) {
     sel.value = aiSelectedProvider + ':' + aiSelectedModel;
   }
+  _updatingSelector = false;
 }
 
 function updateAIStatus() {
@@ -2097,6 +2102,7 @@ function updateAIStatus() {
 }
 
 function onAIModelChange() {
+  if (_updatingSelector) return;
   var sel = document.getElementById('aiModelSelect');
   if (!sel.value) {
     aiSelectedProvider = '';
