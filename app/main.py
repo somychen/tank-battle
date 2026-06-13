@@ -1429,11 +1429,12 @@ async function selectFile(filename) {
   toggleBtn.textContent = '原档';
   document.getElementById('markdownSource').classList.add('hidden');
 
-  // Show markdown content, hide placeholder
+  // Show loading state
   var placeholder = document.getElementById('previewPlaceholder');
   var mdContent = document.getElementById('markdownContent');
   placeholder.style.display = 'none';
   mdContent.classList.remove('hidden');
+  mdContent.innerHTML = '<p style="color:var(--text-muted);padding:20px;text-align:center">加载中...</p>';
 
   try {
     var raw;
@@ -1450,14 +1451,29 @@ async function selectFile(filename) {
       raw = await resp.text();
     }
     currentRawMarkdown = raw;
+
+    // Warn about large files
+    var sizeWarning = '';
+    var PREVIEW_MAX = 2 * 1024 * 1024; // 2MB
+    if (raw.length > PREVIEW_MAX) {
+      sizeWarning = '<p style="color:var(--warning);padding:8px 20px;font-size:12px;margin:0;background:#fffdf0;border-bottom:1px solid #fde68a">'
+        + '⚠ 文件较大（' + (raw.length / 1024 / 1024).toFixed(1) + ' MB），预览可能较慢，建议用原档模式查看</p>';
+    }
+
     document.getElementById('toggleSourceBtn').style.display = '';
     if (typeof marked !== 'undefined') {
-      mdContent.innerHTML = marked.parse(raw);
+      mdContent.innerHTML = sizeWarning + marked.parse(raw);
     } else {
-      mdContent.innerHTML = '<pre>' + escapeHtml(raw) + '</pre>';
+      mdContent.innerHTML = sizeWarning + '<pre>' + escapeHtml(raw) + '</pre>';
     }
   } catch (err) {
-    mdContent.innerHTML = '<p style="color:var(--error);padding:20px">\u52a0\u8f7d\u6587\u4ef6\u5931\u8d25: ' + escapeHtml(err.message) + '</p>';
+    var msg = err.message || '未知错误';
+    // Provide a more helpful message for fetch failures
+    if (msg === 'Failed to fetch' || msg === 'NetworkError' || msg.indexOf('fetch') > -1) {
+      msg = '网络请求失败，请确认服务正常运行。可尝试重新点击文件。';
+    }
+    mdContent.innerHTML = '<p style="color:var(--error);padding:20px">加载文件失败: ' + escapeHtml(msg) + '</p>';
+    console.error('selectFile error:', err);
   }
   // Enable AI send content button
   var btnSC = document.getElementById('btnSendContent');
